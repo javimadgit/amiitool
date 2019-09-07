@@ -26,14 +26,14 @@
 #include <stdint.h>
 
 void aes128ctr(const uint8_t * in, uint8_t * out, size_t size, const uint8_t * key, const uint8_t * iv) {
-	EVP_CIPHER_CTX ctx;
+	EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
 	int pos;
 
-	EVP_CIPHER_CTX_init(&ctx);
-	EVP_EncryptInit_ex(&ctx, EVP_aes_128_ctr(), NULL, key, iv);
-	EVP_EncryptUpdate(&ctx, out, &pos, in, size);
-	EVP_EncryptFinal_ex(&ctx, out + pos, &pos);
-	EVP_CIPHER_CTX_cleanup(&ctx);
+	EVP_CIPHER_CTX_init(ctx);
+	EVP_EncryptInit_ex(ctx, EVP_aes_128_ctr(), NULL, key, iv);
+	EVP_EncryptUpdate(ctx, out, &pos, in, size);
+	EVP_EncryptFinal_ex(ctx, out + pos, &pos);
+	EVP_CIPHER_CTX_cleanup(ctx);
 }
 
 void sha256hmac(const uint8_t * key, size_t keySize, const uint8_t * in, size_t inSize, uint8_t * out) {
