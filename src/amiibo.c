@@ -89,21 +89,21 @@ bool nfc3d_amiibo_unpack(const nfc3d_amiibo_keys * amiiboKeys, const uint8_t * t
 	nfc3d_amiibo_cipher(&dataKeys, internal, plain);
 
 	// Init OpenSSL HMAC context
-	HMAC_CTX hmacCtx;
-	HMAC_CTX_init(&hmacCtx);
+	HMAC_CTX* hmacCtx = HMAC_CTX_new();
+	HMAC_CTX_reset(hmacCtx);
 
 	// Regenerate tag HMAC. Note: order matters, data HMAC depends on tag HMAC!
-	HMAC_Init_ex(&hmacCtx, tagKeys.hmacKey, sizeof(tagKeys.hmacKey), EVP_sha256(), NULL);
-	HMAC_Update(&hmacCtx, plain + 0x1D4, 0x34);
-	HMAC_Final(&hmacCtx, plain + HMAC_POS_TAG, NULL);
+	HMAC_Init_ex(hmacCtx, tagKeys.hmacKey, sizeof(tagKeys.hmacKey), EVP_sha256(), NULL);
+	HMAC_Update(hmacCtx, plain + 0x1D4, 0x34);
+	HMAC_Final(hmacCtx, plain + HMAC_POS_TAG, NULL);
 
 	// Regenerate data HMAC
-	HMAC_Init_ex(&hmacCtx, dataKeys.hmacKey, sizeof(dataKeys.hmacKey), EVP_sha256(), NULL);
-	HMAC_Update(&hmacCtx, plain + 0x029, 0x1DF);
-	HMAC_Final(&hmacCtx, plain + HMAC_POS_DATA, NULL);
+	HMAC_Init_ex(hmacCtx, dataKeys.hmacKey, sizeof(dataKeys.hmacKey), EVP_sha256(), NULL);
+	HMAC_Update(hmacCtx, plain + 0x029, 0x1DF);
+	HMAC_Final(hmacCtx, plain + HMAC_POS_DATA, NULL);
 
 	// HMAC cleanup
-	HMAC_CTX_cleanup(&hmacCtx);
+	HMAC_CTX_free(hmacCtx);
 
 	return
 			memcmp(plain + HMAC_POS_DATA, internal + HMAC_POS_DATA, 32) == 0 &&
@@ -120,23 +120,23 @@ void nfc3d_amiibo_pack(const nfc3d_amiibo_keys * amiiboKeys, const uint8_t * pla
 	nfc3d_amiibo_keygen(&amiiboKeys->data, plain, &dataKeys);
 
 	// Init OpenSSL HMAC context
-	HMAC_CTX hmacCtx;
-	HMAC_CTX_init(&hmacCtx);
+	HMAC_CTX* hmacCtx = HMAC_CTX_new();;
+	HMAC_CTX_reset(hmacCtx);
 
 	// Generate tag HMAC
-	HMAC_Init_ex(&hmacCtx, tagKeys.hmacKey, sizeof(tagKeys.hmacKey), EVP_sha256(), NULL);
-	HMAC_Update(&hmacCtx, plain + 0x1D4, 0x34);
-	HMAC_Final(&hmacCtx, cipher + HMAC_POS_TAG, NULL);
+	HMAC_Init_ex(hmacCtx, tagKeys.hmacKey, sizeof(tagKeys.hmacKey), EVP_sha256(), NULL);
+	HMAC_Update(hmacCtx, plain + 0x1D4, 0x34);
+	HMAC_Final(hmacCtx, cipher + HMAC_POS_TAG, NULL);
 
 	// Generate data HMAC
-	HMAC_Init_ex(&hmacCtx, dataKeys.hmacKey, sizeof(dataKeys.hmacKey), EVP_sha256(), NULL);
-	HMAC_Update(&hmacCtx, plain + 0x029, 0x18B); // Data
-	HMAC_Update(&hmacCtx, cipher + HMAC_POS_TAG, 0x20); // Tag HMAC
-	HMAC_Update(&hmacCtx, plain + 0x1D4, 0x34); // Here be dragons
-	HMAC_Final(&hmacCtx, cipher + HMAC_POS_DATA, NULL);
+	HMAC_Init_ex(hmacCtx, dataKeys.hmacKey, sizeof(dataKeys.hmacKey), EVP_sha256(), NULL);
+	HMAC_Update(hmacCtx, plain + 0x029, 0x18B); // Data
+	HMAC_Update(hmacCtx, cipher + HMAC_POS_TAG, 0x20); // Tag HMAC
+	HMAC_Update(hmacCtx, plain + 0x1D4, 0x34); // Here be dragons
+	HMAC_Final(hmacCtx, cipher + HMAC_POS_DATA, NULL);
 
 	// HMAC cleanup
-	HMAC_CTX_cleanup(&hmacCtx);
+	HMAC_CTX_free(hmacCtx);
 
 	// Encrypt
 	nfc3d_amiibo_cipher(&dataKeys, plain, cipher);

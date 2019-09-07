@@ -40,8 +40,8 @@ void nfc3d_drbg_init(nfc3d_drbg_ctx * ctx, const uint8_t * hmacKey, size_t hmacK
 	memcpy(ctx->buffer + sizeof(uint16_t), seed, seedSize);
 
 	// Initialize underlying HMAC context
-	HMAC_CTX_init(&ctx->hmacCtx);
-	HMAC_Init_ex(&ctx->hmacCtx, hmacKey, hmacKeySize, EVP_sha256(), NULL);
+	ctx->hmacCtx = HMAC_CTX_new();
+	HMAC_Init_ex(ctx->hmacCtx, hmacKey, hmacKeySize, EVP_sha256(), NULL);
 }
 
 void nfc3d_drbg_step(nfc3d_drbg_ctx * ctx, uint8_t * output) {
@@ -50,7 +50,7 @@ void nfc3d_drbg_step(nfc3d_drbg_ctx * ctx, uint8_t * output) {
 
 	if (ctx->used) {
 		// If used at least once, reinitialize the HMAC
-		HMAC_Init_ex(&ctx->hmacCtx, NULL, 0, NULL, NULL);
+		HMAC_Init_ex(ctx->hmacCtx, NULL, 0, NULL, NULL);
 	} else {
 		ctx->used = true;
 	}
@@ -61,13 +61,13 @@ void nfc3d_drbg_step(nfc3d_drbg_ctx * ctx, uint8_t * output) {
 	ctx->iteration++;
 
 	// Do HMAC magic
-	HMAC_Update(&ctx->hmacCtx, ctx->buffer, ctx->bufferSize);
-	HMAC_Final(&ctx->hmacCtx, output, NULL);
+	HMAC_Update(ctx->hmacCtx, ctx->buffer, ctx->bufferSize);
+	HMAC_Final(ctx->hmacCtx, output, NULL);
 }
 
 void nfc3d_drbg_cleanup(nfc3d_drbg_ctx * ctx) {
 	assert(ctx != NULL);
-	HMAC_CTX_cleanup(&ctx->hmacCtx);
+	HMAC_CTX_free(ctx->hmacCtx);
 }
 
 void nfc3d_drbg_generate_bytes(const uint8_t * hmacKey, size_t hmacKeySize, const uint8_t * seed, size_t seedSize, uint8_t * output, size_t outputSize) {
